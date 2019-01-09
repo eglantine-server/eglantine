@@ -1,0 +1,268 @@
+<!-- 
+
+Copyright 2015 Christophe Drion christophe.drion@gmail.com
+
+version 1.3
+
+ -->
+
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:f="http://xmlns.jcp.org/jsf/core"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:c="http://java.sun.com/jsp/jstl/core">
+
+	<h:form id="${tableId}Form">
+		<p:growl id="msgs" showDetail="true" />
+		<p:dataTable id="${tableId}" widgetVar="${tableId}_itemsTable" style="table-layout: auto"
+			value="#{itemsBean.list}" var="item" rowKey="#{item.baseId}"
+			filteredValue="#{itemsBean.filtered}"
+			selection="#{itemsBean.selectedItem}" editable="true"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {Exporters} {MyColumns} {Filter}"
+			paginator="true" rows="25" selectionMode="single"
+			rowIndexVar="rowIndex" rowStyleClass="#{item.rowStyle}">
+
+			<f:facet name="{MyColumns}">
+		        <p:commandButton id="toggler" type="button" value="Columns" style="float:right" icon="pi pi-align-justify" />
+        		<p:columnToggler datasource="${tableId}" trigger="toggler" />
+       		</f:facet>
+
+			<f:facet name="{Filter}">
+				<p:outputPanel>
+					<h:outputText value="Search all fields:" />
+					<p:inputText id="globalFilter" onkeyup="PF('${tableId}_itemsTable').filter()"
+						style="width:150px" placeholder="Enter keyword" />
+				</p:outputPanel>
+			</f:facet>
+
+			<f:facet name="{Exporters}">
+				<h:commandLink>
+					<p:graphicImage name="images/excel.png" width="24" />
+					<p:dataExporter type="xls" target="${tableId}" fileName="${title}" />
+				</h:commandLink>
+
+				<h:commandLink>
+					<p:graphicImage name="images/csv.png" width="24" />
+					<p:dataExporter type="csv" target="${tableId}" fileName="${title}" />
+				</h:commandLink>
+
+				<h:commandLink>
+					<p:graphicImage name="images/xml.png" width="24" />
+					<p:dataExporter type="xml" target="${tableId}" fileName="${title}" />
+				</h:commandLink>
+			</f:facet>
+
+			<p:ajax event="rowEditInit" listener="#{itemsBean.onRowEditInit}" />
+			<p:ajax event="rowEdit" listener="#{itemsBean.onRowEdit}"
+				update="${parentId}:${tableId}Form:msgs" />
+			<p:ajax event="rowEditCancel" listener="#{itemsBean.onRowCancel}"
+				update="${parentId}:${tableId}Form:msgs" />
+
+			<c:forEach items="${itemsBean.jsfProps(viewId)}" var="jsfprop">
+				<c:choose>
+					<c:when test="${itemsBean.isPassword(jsfprop)}">
+					</c:when>
+					<c:when test="${itemsBean.isSelectOneMenu(jsfprop)}">
+						<p:column headerText="${itemsBean.uiName(jsfprop)}"
+							sortBy="#{itemsBean.getForeignName(item,jsfprop)}"
+							filterBy="#{itemsBean.getForeignName(item,jsfprop)}"
+							filterMatchMode="contains">
+							<p:cellEditor>
+								<f:facet name="output">
+									<c:choose>
+										<c:when test="${itemsBean.isHRef(jsfprop)}">
+											<p:commandLink
+												value="#{itemsBean.getForeignName(item,jsfprop)}"
+												process="@this" action="#{itemsBean.goTo(item,jsfprop)}" />
+										</c:when>
+										<c:otherwise>
+											<h:outputText
+												value="#{itemsBean.getForeignName(item,jsfprop)}" />
+										</c:otherwise>
+									</c:choose>
+								</f:facet>
+								<f:facet name="input">
+									<p:selectOneMenu id="${jsfprop}" value="#{item[jsfprop]}">
+										<p:ajax listener="#{itemsBean.onPropertyChange(item,jsfprop)}"
+											update="#{itemsBean.getDependantPropertyIds(jsfprop)}" />
+										<f:selectItem itemLabel="" itemValue=""
+											noSelectionOption="true" />
+										<f:selectItems value="#{itemsBean.getList(item,jsfprop)}" />
+									</p:selectOneMenu>
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+					</c:when>
+					<c:when test="${itemsBean.isDate(jsfprop)}">
+						<p:column headerText="${itemsBean.uiName(jsfprop)}"
+							sortBy="#{item[jsfprop]}" sortFunction="#{itemsBean.sort}"
+							filterBy="#{item[jsfprop]}" filterFunction="#{itemsBean.filter}">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{item[jsfprop]}">
+										<f:convertDateTime pattern="dd/MM/yyyy" timeZone="CET" />
+									</h:outputText>
+								</f:facet>
+								<f:facet name="input">
+									<p:calendar value="#{item[jsfprop]}" pattern="dd/MM/yyyy">
+									</p:calendar>
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+					</c:when>
+					<c:when test="${itemsBean.isBoolean(jsfprop)}">
+						<p:column headerText="${itemsBean.uiName(jsfprop)}"
+							sortBy="#{item[jsfprop]}" sortFunction="#{itemsBean.sort}"
+							filterBy="#{item[jsfprop]}" filterFunction="#{itemsBean.filter}">
+							<p:cellEditor>
+								<f:facet name="output">
+									<p:selectBooleanCheckbox value="#{item[jsfprop]}"  disabled="true"/>
+								</f:facet>
+								<f:facet name="input">
+									<p:selectBooleanCheckbox value="#{item[jsfprop]}" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+					</c:when>
+					<c:when test="${itemsBean.isIcon(jsfprop) and itemsBean.isHRef(jsfprop)}">
+						<p:column>
+						    <f:facet name="header">
+        						<h:outputText styleClass="ui-icon ${itemsBean.uiIcon(jsfprop)}" />
+						    </f:facet>
+							<p:cellEditor>
+								<f:facet name="output">
+									<p:button icon="${itemsBean.uiIcon(jsfprop)}" onclick="window.open('#{item[jsfprop]}','_blank');return false;"  title="#{item[jsfprop]}" disabled="#{(item[jsfprop] eq null) or (item[jsfprop].length() eq 0)}"/>
+								</f:facet>
+								<f:facet name="input">
+									<p:inputText value="#{item[jsfprop]}" style="width:100%"
+										label="${itemsBean.uiName(jsfprop)}" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>					
+					</c:when>
+					<c:when test="${itemsBean.isXmlDoc(jsfprop)}">
+						<p:column>
+						    <f:facet name="header">
+        						<h:outputText styleClass="ui-icon ui-icon-document" />
+						    </f:facet>
+							<p:cellEditor>
+								<f:facet name="output">
+									<p:button icon="ui-icon-document" onclick=""/>
+								</f:facet>
+								<f:facet name="input">
+									<p:textEditor id="${jsfprop}" value="#{item[jsfprop]}"
+										height="300" style="margin-bottom:10px"
+										placeholder="please enter the text body here">
+									</p:textEditor>
+								</f:facet>
+							</p:cellEditor>
+						</p:column>					
+					</c:when>
+					<c:otherwise>
+						<p:column headerText="${itemsBean.uiName(jsfprop)}"
+							sortBy="#{item[jsfprop]}" sortFunction="#{itemsBean.sort}"
+							filterBy="#{item[jsfprop]}" filterFunction="#{itemsBean.filter}"
+							filterMatchMode="contains">
+							<p:cellEditor>
+								<f:facet name="output">
+									<c:choose>
+										<c:when test="${itemsBean.isHRef(jsfprop)}">
+											<p:commandLink value="#{item[jsfprop]}" process="@this"
+												action="#{itemsBean.goTo(item,jsfprop)}" />
+										</c:when>
+										<c:otherwise>
+											<h:outputText
+												value="#{item[jsfprop].length() gt 20 ? item[jsfprop].substring(0,17).concat('...') : item[jsfprop]}" 
+												title="#{item[jsfprop]}"/>
+										</c:otherwise>
+									</c:choose>
+								</f:facet>
+								<f:facet name="input">
+									<p:inputText value="#{item[jsfprop]}" style="width:100%"
+										label="${itemsBean.uiName(jsfprop)}" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+					</c:otherwise>
+				</c:choose>
+			</c:forEach>
+
+			<p:column style="width:32px" exportable="false">
+				<p:rowEditor />
+			</p:column>
+		</p:dataTable>
+
+		<p:contextMenu for="${tableId}">
+			<p:menuitem value="View" update="${tableId}_detailId" icon="ui-icon-search"
+				oncomplete="PF('${tableId}_itemDialogVar').show()" />
+			<c:if test="#{itemsBean.canSendMailTo()}">
+				<p:menuitem value="Send Mail" update="${tableId}_sendMailDialogId"
+					icon="ui-icon-mail-closed" oncomplete="PF('${tableId}_sendMailDialogVar').show()" />
+			</c:if>
+			<p:menuitem value="Delete" update="${parentId}:${tableId}Form:msgs @(.ui-datatable)" icon="ui-icon-close"
+				actionListener="#{itemsBean.deleteItem}"/>
+		</p:contextMenu>
+
+		<p:dialog header="${title} Info" widgetVar="${tableId}_itemDialogVar" modal="true"
+			showEffect="fade" hideEffect="fade" resizable="false">
+			<p:outputPanel id="${tableId}_detailId" style="text-align:center;">
+				<p:panelGrid columns="2"
+					rendered="#{itemsBean.selectedItem != null}"
+					columnClasses="label,value">
+
+					<c:forEach items="${itemsBean.jsfProps(0)}" var="jsfprop">
+						<c:choose>
+							<c:when test="${itemsBean.isPassword(jsfprop)}">
+							</c:when>
+							<c:when test="${itemsBean.isSelectOneMenu(jsfprop)}">
+								<h:outputText value="${itemsBean.uiName(jsfprop)}" />
+								<h:outputText
+									value="#{itemsBean.getForeignName(itemsBean.selectedItem,jsfprop)}" />
+							</c:when>
+							<c:when test="${itemsBean.isDate(jsfprop)}">
+								<h:outputText value="${itemsBean.uiName(jsfprop)}" />
+								<h:outputText value="#{itemsBean.selectedItem[jsfprop]}">
+									<f:convertDateTime pattern="dd/MM/yyyy" timeZone="CET" />
+								</h:outputText>
+							</c:when>
+							<c:when test="${itemsBean.isXmlDoc(jsfprop)}">
+								<h:outputText value="${itemsBean.uiName(jsfprop)}" />
+								<h:outputText escape="false" value="#{itemsBean.selectedItem[jsfprop]}"/>
+							</c:when>
+							<c:otherwise>
+								<h:outputText value="${itemsBean.uiName(jsfprop)}" />
+								<h:outputText value="#{itemsBean.selectedItem[jsfprop]}" />
+							</c:otherwise>
+						</c:choose>
+					</c:forEach>
+				</p:panelGrid>
+			</p:outputPanel>
+		</p:dialog>
+
+		<c:if test="${itemsBean.canSendMailTo()}">
+			<p:dialog id="${tableId}_sendMailDialogId"
+				header="Send Mail to: #{itemsBean.getMailTo()}"
+				widgetVar="${tableId}_sendMailDialogVar" modal="true" closeable="true"
+				showEffect="fade" hideEffect="fade" resizable="true">
+
+				<c:set var="mailto" value="#{itemsBean.selectedItem.eMail}" />
+				<p:outputLabel for="newEmailSubject" value="Subject: " />
+				<p:inputText id="newEmailSubject" value="#{mailBean.mailSubject}"
+					required="true" label="Subject">
+				</p:inputText>
+				<p:message for="newEmailSubject" display="icon" />
+
+				<p:textEditor widgetVar="${tableId}_mailEditor1Var" value="#{mailBean.mailText}"
+					height="300" style="margin-bottom:10px" dynamic="true"
+					placeholder="please enter the mail body here">
+				</p:textEditor>
+				<p:commandButton value="Clear" type="button" update="showValue"
+					onclick="PF('${tableId}_mailEditor1Var').clear();" icon="ui-icon-close" />
+				<p:commandButton value="Send Mail"
+					actionListener="#{mailBean.sendMail(mailto)}"
+					oncomplete="PF('${tableId}_sendMailDialogVar').hide()" icon="fa-send-o" />
+			</p:dialog>
+		</c:if>
+	</h:form>
+</ui:fragment>

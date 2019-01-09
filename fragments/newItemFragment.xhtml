@@ -1,0 +1,72 @@
+<!-- 
+
+Copyright 2015 Christophe Drion christophe.drion@gmail.com
+
+version 1.3
+
+ -->
+
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:f="http://xmlns.jcp.org/jsf/core"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:c="http://java.sun.com/jsp/jstl/core">
+
+	<h:form id="newItemForm">
+		<c:if test="${viewId == null}">
+			<c:set var="viewId" scope="view" value="0" />
+		</c:if>
+		
+		<p:messages>
+			<p:autoUpdate />
+		</p:messages>
+
+		<h:panelGrid columns="3" cellpadding="5">
+			<c:forEach items="${itemsBean.jsfProps(viewId)}" var="jsfprop">
+				<p:outputLabel for="${jsfprop}" value="${itemsBean.uiName(jsfprop)}" />
+				<c:choose>
+					<c:when test="${itemsBean.isPassword(jsfprop)}">
+						<p:password id="${jsfprop}" value="#{itemsBean.newItem[jsfprop]}"
+							required="true" label="#{itemsBean.uiName(jsfprop)}" />
+					</c:when>
+					<c:when test="${itemsBean.isSelectOneMenu(jsfprop)}">
+						<p:selectOneMenu id="${jsfprop}"
+							value="#{itemsBean.newItem[jsfprop]}">
+							<p:ajax listener="#{itemsBean.onPropertyChange(newItem,jsfprop)}"
+								update="#{itemsBean.getDependantPropertyIds(jsfprop)}" />
+							<f:selectItem itemLabel="" itemValue="" noSelectionOption="true" />
+							<f:selectItems
+								value="#{itemsBean.getList(itemsBean.newItem,jsfprop)}" />
+						</p:selectOneMenu>
+					</c:when>
+					<c:when test="${itemsBean.isDate(jsfprop)}">
+						<p:calendar id="${jsfprop}" value="#{itemsBean.newItem[jsfprop]}"
+							pattern="dd/MM/yyyy">
+						</p:calendar>
+					</c:when>
+					<c:when test="${itemsBean.isBoolean(jsfprop)}">
+						<p:selectBooleanCheckbox value="#{item[jsfprop]}" label="#{itemsBean.uiName(jsfprop)}"/>
+					</c:when>
+			 		<c:when test="${itemsBean.isXmlDoc(jsfprop)}">
+ 						<p:textEditor id="${jsfprop}" value="#{itemsBean.newItem[jsfprop]}"
+							height="300" style="margin-bottom:10px"
+							placeholder="please enter the text body here">
+						</p:textEditor>
+					</c:when>
+					<c:otherwise>
+						<p:inputText id="${jsfprop}" value="#{itemsBean.newItem[jsfprop]}"
+							required="true" label="#{itemsBean.uiName(jsfprop)}">
+						</p:inputText>
+					</c:otherwise>
+				</c:choose>
+				<p:message for="${jsfprop}" display="icon" />
+			</c:forEach>
+		</h:panelGrid>
+
+		<p:commandButton value="Create" update="newItemForm @(.ui-datatable)"
+			icon="ui-icon-check" actionListener="#{itemsBean.addNewItem}"
+			validateClient="true" style="margin-right:10px" />
+
+	</h:form>
+</ui:fragment>

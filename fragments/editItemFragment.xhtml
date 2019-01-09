@@ -1,0 +1,71 @@
+<!-- 
+
+Copyright 2015 Christophe Drion christophe.drion@gmail.com
+
+version 1.3
+
+ -->
+
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:f="http://xmlns.jcp.org/jsf/core"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:c="http://java.sun.com/jsp/jstl/core">
+
+	<h:form id="editItemForm">
+
+		<p:growl id="msgs" showDetail="true" />
+
+		<p:commandButton value="Update" update="msgs editGrid @(.ui-datatable)"
+			icon="ui-icon-check" actionListener="#{itemBean.updateItem()}"
+			validateClient="false" style="margin-right:10px" />
+
+		<p:commandButton value="Cancel" update="msgs editGrid"
+			icon="ui-icon-cancel" actionListener="#{itemBean.reloadItem()}"
+			validateClient="false" style="margin-right:10px" />
+
+		<h:panelGrid id="editGrid" columns="3" cellpadding="5">
+			<c:forEach items="${itemBean.jsfProps(viewId)}" var="jsfprop">
+				<p:outputLabel for="${jsfprop}" value="${itemBean.uiName(jsfprop)}" />
+				<c:choose>
+					<c:when test="${itemBean.isPassword(jsfprop)}">
+						<p:password id="${jsfprop}" value="#{itemBean.editItem[jsfprop]}"
+							required="true" label="#{itemBean.uiName(jsfprop)}" />
+					</c:when>
+					<c:when test="${itemBean.isSelectOneMenu(jsfprop)}">
+						<p:selectOneMenu id="${jsfprop}"
+							value="#{itemBean.editItem[jsfprop]}">
+							<p:ajax listener="#{itemBean.onPropertyChange(editItem,jsfprop)}"
+								update="#{itemBean.getDependantPropertyIds(jsfprop)}" />
+							<f:selectItem itemLabel="" itemValue="" noSelectionOption="true" />
+							<f:selectItems
+								value="#{itemBean.getList(itemBean.editItem,jsfprop)}" />
+						</p:selectOneMenu>
+					</c:when>
+					<c:when test="${itemBean.isDate(jsfprop)}">
+						<p:calendar id="${jsfprop}" value="#{itemBean.editItem[jsfprop]}"
+							pattern="dd/MM/yyyy">
+						</p:calendar>
+					</c:when>
+					<c:when test="${itemsBean.isBoolean(jsfprop)}">
+						<p:selectBooleanCheckbox value="#{item[jsfprop]}" label="#{itemsBean.uiName(jsfprop)}"/>
+					</c:when>
+					<c:when test="${itemBean.isXmlDoc(jsfprop)}">
+						<p:textEditor id="${jsfprop}" value="#{itemBean.editItem[jsfprop]}"
+							height="300" style="margin-bottom:10px"
+							placeholder="please enter the text body here">
+						</p:textEditor>
+					</c:when>
+					<c:otherwise>
+						<p:inputText id="${jsfprop}" value="#{itemBean.editItem[jsfprop]}"
+							required="true" label="#{itemBean.uiName(jsfprop)}">
+						</p:inputText>
+					</c:otherwise>
+				</c:choose>
+				<p:message for="${jsfprop}" display="icon" />
+			</c:forEach>
+		</h:panelGrid>
+
+	</h:form>
+</ui:fragment>
